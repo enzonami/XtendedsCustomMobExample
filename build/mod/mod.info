@@ -1,0 +1,10 @@
+{
+	id = xtendedscustommobsexample,
+	name = Xtendeds Custom Mobs Example,
+	version = 1.0,
+	gameVersion = 1.0.3,
+	author = Xtended,
+	description = Replaces swamp slime sprites and adds custom darkness mob,
+	clientside = false,
+	main = com.xtendedscustommobsexample.XtendedsCustomMobsExampleMod
+}

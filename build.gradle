@@ -1,0 +1,129 @@
+plugins {
+    id 'java'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+// Mod configuration
+project.ext.modId = "xtendedscustommobsexample"
+project.ext.modName = "Xtendeds Custom Mobs Example"
+project.ext.modVersion = "1.0"
+project.ext.gameVersion = "1.0.3"
+project.ext.modAuthor = "Xtended"
+project.ext.modDescription = "Replaces swamp slime sprites and adds custom darkness mob"
+
+// Game installation directory
+project.ext.gameDir = "/home/enzonami/.local/share/Steam/steamapps/common/Necesse"
+
+// Java configuration - handled by toolchain above
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation files("${project.ext.gameDir}/Necesse.jar")
+}
+
+// Source sets
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+        resources {
+            srcDirs = ['src/main/resources', 'resources']
+        }
+    }
+}
+
+// Set output directories
+sourceSets.main.output.resourcesDir = file("build/mod/resources/")
+sourceSets.main.java.destinationDirectory = file("build/mod/")
+
+// Task to generate mod.info using Necesse's utility
+task generateModInfo(type: JavaExec) {
+    group "necesse"
+    description "Creates the mod info file using Necesse's utility"
+    classpath = files("${project.ext.gameDir}/Necesse.jar")
+    mainClass = "CreateModInfoFile"
+    args "-file", "build/mod/mod.info",
+            "-id", "${project.ext.modId}",
+            "-name", "${project.ext.modName}", 
+            "-version", "${project.ext.modVersion}",
+            "-gameVersion", "${project.ext.gameVersion}",
+            "-description", "${project.ext.modDescription}",
+            "-author", "${project.ext.modAuthor}",
+            "-clientside", "false",
+            "-main", "com.xtendedscustommobsexample.XtendedsCustomMobsExampleMod"
+}
+
+// Build mod JAR
+task buildModJar(type: Jar, dependsOn: [classes, generateModInfo]) {
+    group "necesse"
+    description "Generates the mod JAR into the build folder"
+    
+    // Add mod output from build/mod directory
+    from "build/mod"
+    
+    // Include preview.png at JAR root
+    from("resources/preview.png")
+    
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    
+    // Use capitalized name with game version like XtendedHostility-1.0.3-1.0.jar
+    archiveBaseName = "XtendedsCustomMobsExample"
+    archiveVersion = "${project.ext.gameVersion}-${project.ext.modVersion}"
+    destinationDirectory = file("build/jar")
+}
+
+// Create steam_appid.txt file
+task createAppID {
+    group "necesse"
+    description "Creates steam_appid.txt file"
+    doLast {
+        file("steam_appid.txt").text = "1169040"
+    }
+}
+
+// Run client with mod for testing/upload
+task runClient(type: JavaExec, dependsOn: [buildModJar, createAppID]) {
+    group "necesse"
+    description "Run client with current mod"
+    
+    classpath = files("${project.ext.gameDir}/Necesse.jar")
+    mainClass = "StartSteamClient"
+    jvmArgs "-Xms512m", "-Xmx4G", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseG1GC", "-XX:G1NewSizePercent=20", "-XX:G1ReservePercent=20", "-XX:MaxGCPauseMillis=50", "-XX:G1HeapRegionSize=32M"
+    args "-dev", "-mod", "build/jar"
+}
+
+// Run development client (for multiplayer testing)
+task runDevClient(type: JavaExec, dependsOn: buildModJar) {
+    classpath = files("${project.ext.gameDir}/Necesse.jar")
+    mainClass = 'necesse.engine.Game'
+    args = ['-mod', projectDir.absolutePath, '-dev']
+}
+
+// Run dedicated server with mod
+task runServer(type: JavaExec, dependsOn: buildModJar) {
+    classpath = files("${project.ext.gameDir}/Server.jar")
+    mainClass = 'necesse.engine.GameServer'
+    args = ['-mod', projectDir.absolutePath]
+}
+
+// Clean task
+task cleanBuild(type: Delete) {
+    delete 'build'
+}
+
+// Configure Java to use version 17
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ['-Xlint:unchecked', '-Xlint:deprecation']
+}
+
+// Default task
+defaultTasks 'buildModJar'
