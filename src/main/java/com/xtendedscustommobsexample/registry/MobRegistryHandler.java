@@ -1,6 +1,7 @@
 package com.xtendedscustommobsexample.registry;
 
 import com.xtendedscustommobsexample.mobs.DarknessMob;
+import com.xtendedscustommobsexample.mobs.SharkMob;
 import com.xtendedscustommobsexample.mobs.CustomSwampSlimeMob;
 import necesse.engine.registries.MobRegistry;
 
@@ -8,6 +9,7 @@ public class MobRegistryHandler {
     
     public static void registerMobs() {
         MobRegistry.registerMob("darkness", DarknessMob.class, true);
+        MobRegistry.registerMob("shark", SharkMob.class, true);
     }
     
     public static void replaceSwampSlime() {
